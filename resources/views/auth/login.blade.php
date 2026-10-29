@@ -459,9 +459,9 @@
 <div class="login-right">
     <!-- Dark header -->
     <div class="login-form-header">
-        <div class="login-logo-circle">RL</div>
+        <img src="{{ asset('logo.png') }}" alt="Ruang Lemari" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 0.5rem;">
         <div class="login-form-app-name">Ruang Lemari</div>
-        <div class="login-form-app-sub">Masuk ke akun Anda</div>
+        <div class="login-form-app-sub">Semua Langanan dalam satu tempat</div>
     </div>
 
     <!-- Form body -->

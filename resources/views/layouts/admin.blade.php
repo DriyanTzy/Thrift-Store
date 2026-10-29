@@ -252,7 +252,7 @@
     <!-- Admin Sidebar -->
     <aside>
         <div class="sidebar-brand">
-            <div class="logo-badge">RL</div>
+            <img src="{{ asset('logo.png') }}" alt="Ruang Lemari" style="height: 38px; width: auto; object-fit: contain;">
             <div>
                 <span style="font-weight: 800; font-size: 1.05rem; color: #0F172A; display: block; line-height: 1.2;">Ruang Lemari</span>
                 <span style="font-size: 0.7rem; font-weight: 700; color: #7C3AED; text-transform: uppercase;">Admin Control</span>

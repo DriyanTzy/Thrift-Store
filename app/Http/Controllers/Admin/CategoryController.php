@@ -2,81 +2,65 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\DTO\CategoryDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use App\Services\CategoryService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class CategoryController extends Controller
 {
-    public function index()
+    public function __construct(
+        private readonly CategoryService $categoryService
+    ) {}
+
+    public function index(): View
     {
         $categories = Category::withCount('products')->orderBy('id', 'desc')->get();
 
         return view('admin.categories.index', compact('categories'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('admin.categories.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'banner_color' => 'nullable|string|max:50',
-            'icon' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
-        ]);
+        $dto = CategoryDTO::fromArray(
+            data: $request->validated(),
+            image: $request->file('image')
+        );
 
-        $validated['slug'] = Str::slug($validated['name']);
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('categories', 'public');
-        }
-
-        Category::create($validated);
+        $this->categoryService->createCategory($dto);
 
         return redirect()->route('admin.categories.index')->with('success', 'Kategori produk berhasil dibuat!');
     }
 
-    public function edit(Category $category)
+    public function edit(Category $category): View
     {
         return view('admin.categories.edit', compact('category'));
     }
 
-    public function update(Request $request, Category $category)
+    public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'banner_color' => 'nullable|string|max:50',
-            'icon' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
-        ]);
+        $dto = CategoryDTO::fromArray(
+            data: $request->validated(),
+            image: $request->file('image')
+        );
 
-        $validated['slug'] = Str::slug($validated['name']);
-
-        if ($request->hasFile('image')) {
-            if ($category->image && Storage::disk('public')->exists($category->image)) {
-                Storage::disk('public')->delete($category->image);
-            }
-            $validated['image'] = $request->file('image')->store('categories', 'public');
-        }
-
-        $category->update($validated);
+        $this->categoryService->updateCategory($category, $dto);
 
         return redirect()->route('admin.categories.index')->with('success', 'Kategori produk berhasil diperbarui!');
     }
 
-    public function destroy(Category $category)
+    public function destroy(Category $category): RedirectResponse
     {
-        if ($category->image && Storage::disk('public')->exists($category->image)) {
-            Storage::disk('public')->delete($category->image);
-        }
-
-        $category->delete();
+        $this->categoryService->deleteCategory($category);
 
         return redirect()->route('admin.categories.index')->with('success', 'Kategori produk berhasil dihapus!');
     }

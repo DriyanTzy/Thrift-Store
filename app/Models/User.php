@@ -44,6 +44,10 @@ class User extends Authenticatable
         ];
     }
 
+    // ──────────────────────────────────────────────
+    //  Relasi
+    // ──────────────────────────────────────────────
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
@@ -69,9 +73,53 @@ class User extends Authenticatable
         return $this->hasMany(ChatMessage::class, 'sender_id');
     }
 
+    // ──────────────────────────────────────────────
+    //  Scopes
+    // ──────────────────────────────────────────────
+
     /**
-     * Get unread chat messages count for this user
+     * Scope untuk pengguna yang dapat dicari oleh publik (mengecualikan admin demi privasi).
      */
+    public function scopeSearchablePublic($query, ?string $term = null)
+    {
+        $q = $query->where('is_admin', false);
+
+        if ($term) {
+            $q->where(function ($sub) use ($term) {
+                $sub->where('name', 'like', '%'.$term.'%')
+                    ->orWhere('store_name', 'like', '%'.$term.'%')
+                    ->orWhere('player_tag', 'like', '%'.$term.'%')
+                    ->orWhere('store_city', 'like', '%'.$term.'%');
+            });
+        }
+
+        return $q;
+    }
+
+    // ──────────────────────────────────────────────
+    //  Domain Methods
+    // ──────────────────────────────────────────────
+
+    /**
+     * User ini adalah admin platform.
+     */
+    public function isAdmin(): bool
+    {
+        return (bool) $this->is_admin;
+    }
+
+    /**
+     * User ini adalah seller (memiliki toko / produk).
+     */
+    public function isSeller(): bool
+    {
+        return ! empty($this->getRawOriginal('store_name'));
+    }
+
+    // ──────────────────────────────────────────────
+    //  Accessors
+    // ──────────────────────────────────────────────
+
     public function getUnreadChatCountAttribute(): int
     {
         return ChatMessage::where('receiver_id', $this->id)
@@ -80,24 +128,43 @@ class User extends Authenticatable
     }
 
     /**
-     * Get store display name (distinct from user personal name, even under same email)
+     * URL Foto Profil / Avatar Pribadi
      */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar ? asset('storage/'.$this->avatar) : null;
+    }
+
+    /**
+     * URL Logo Toko (fallback ke avatar pribadi jika logo toko belum diupload)
+     */
+    public function getStoreLogoUrlAttribute(): ?string
+    {
+        if ($this->store_logo) {
+            return asset('storage/'.$this->store_logo);
+        }
+
+        return $this->avatar_url;
+    }
+
+    /**
+     * Dapatkan foto yang tepat untuk konteks (toko vs pengguna)
+     */
+    public function getProfilePictureForContext(bool $isStoreContext = false): ?string
+    {
+        return $isStoreContext ? $this->store_logo_url : $this->avatar_url;
+    }
+
     public function getStoreNameAttribute(?string $value): string
     {
         return $value ?: ($this->name."'s Thrift Shop");
     }
 
-    /**
-     * Get store slogan
-     */
     public function getStoreSloganAttribute(?string $value): string
     {
         return $value ?: 'Koleksi Thrifting & Preloved Fashion Terkurasi';
     }
 
-    /**
-     * Get store city
-     */
     public function getStoreCityAttribute(?string $value): string
     {
         return $value ?: 'Jakarta';

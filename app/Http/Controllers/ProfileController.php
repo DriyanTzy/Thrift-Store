@@ -2,83 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\PersonalProfileDTO;
+use App\DTO\StoreProfileDTO;
+use App\Http\Requests\UpdatePersonalProfileRequest;
+use App\Http\Requests\UpdateStoreProfileRequest;
+use App\Services\UserProfileService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    public function __construct(
+        private readonly UserProfileService $userProfileService
+    ) {}
+
     /**
      * Tampilkan formulir pengaturan profil (Pembedaan Profil Pengguna vs Profil Toko dalam 1 Akun/Email)
      */
-    public function edit(Request $request)
+    public function edit(Request $request): View
     {
         $user = auth()->user();
-        $activeTab = $request->query('tab', 'personal'); // 'personal' atau 'store'
+        $activeTab = $request->query('tab', 'personal');
 
         return view('profile.edit', compact('user', 'activeTab'));
     }
 
     /**
-     * Perbarui Profil Pengguna / Pribadi (Data Diri & Pengiriman)
+     * Perbarui Profil Pengguna / Pribadi via PersonalProfileDTO
      */
-    public function updateUser(Request $request)
+    public function updateUser(UpdatePersonalProfileRequest $request): RedirectResponse
     {
-        $user = auth()->user();
+        $dto = PersonalProfileDTO::fromArray(
+            data: $request->validated(),
+            avatar: $request->file('avatar')
+        );
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:25',
-            'player_tag' => 'nullable|string|max:50',
-            'address' => 'nullable|string|max:500',
-            'bio' => 'nullable|string|max:500',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-        ]);
-
-        if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
-        }
-
-        $user->update($validated);
+        $this->userProfileService->updatePersonalProfile(auth()->user(), $dto);
 
         return redirect()->route('profile.edit', ['tab' => 'personal'])
             ->with('success', 'Profil pribadi pengguna berhasil disimpan!');
     }
 
     /**
-     * Perbarui Profil Toko / Penjual (Identitas Etalase & Brand Toko)
+     * Perbarui Profil Toko / Penjual via StoreProfileDTO
      */
-    public function updateStore(Request $request)
+    public function updateStore(UpdateStoreProfileRequest $request): RedirectResponse
     {
-        $user = auth()->user();
+        $dto = StoreProfileDTO::fromArray(
+            data: $request->validated(),
+            logo: $request->file('store_logo'),
+            banner: $request->file('store_banner')
+        );
 
-        $validated = $request->validate([
-            'store_name' => 'required|string|max:255',
-            'store_slogan' => 'nullable|string|max:255',
-            'store_city' => 'required|string|max:100',
-            'store_phone' => 'nullable|string|max:25',
-            'store_description' => 'nullable|string|max:1500',
-            'store_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-            'store_banner' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
-        ]);
-
-        if ($request->hasFile('store_logo')) {
-            if ($user->store_logo) {
-                Storage::disk('public')->delete($user->store_logo);
-            }
-            $validated['store_logo'] = $request->file('store_logo')->store('stores', 'public');
-        }
-
-        if ($request->hasFile('store_banner')) {
-            if ($user->store_banner) {
-                Storage::disk('public')->delete($user->store_banner);
-            }
-            $validated['store_banner'] = $request->file('store_banner')->store('stores', 'public');
-        }
-
-        $user->update($validated);
+        $this->userProfileService->updateStoreProfile(auth()->user(), $dto);
 
         return redirect()->route('profile.edit', ['tab' => 'store'])
             ->with('success', 'Profil toko penjualan Anda berhasil diperbarui!');

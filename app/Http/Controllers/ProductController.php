@@ -19,16 +19,9 @@ class ProductController extends Controller
         $searchQuery = $request->query('q');
 
         // Barang yang stoknya habis tidak tampil di etalase toko
-        $query = Product::availableInStore()->with(['category', 'images', 'reviews', 'user']);
-
-        // Fitur pencarian berdasarkan nama, deskripsi, atau badge produk
-        if ($searchQuery) {
-            $query->where(function ($q) use ($searchQuery) {
-                $q->where('name', 'like', '%'.$searchQuery.'%')
-                    ->orWhere('description', 'like', '%'.$searchQuery.'%')
-                    ->orWhere('badge', 'like', '%'.$searchQuery.'%');
-            });
-        }
+        $query = Product::availableInStore()
+            ->search($searchQuery)
+            ->with(['category', 'images', 'reviews', 'user']);
 
         if ($selectedCategorySlug) {
             $category = Category::where('slug', $selectedCategorySlug)->first();
@@ -42,13 +35,7 @@ class ProductController extends Controller
         // Fitur pencarian User & Toko (Profil Admin dikecualikan / tidak bisa dicari demi privasi)
         $matchedUsers = collect();
         if ($searchQuery) {
-            $matchedUsers = User::where('is_admin', false)
-                ->where(function ($q) use ($searchQuery) {
-                    $q->where('name', 'like', '%'.$searchQuery.'%')
-                        ->orWhere('store_name', 'like', '%'.$searchQuery.'%')
-                        ->orWhere('player_tag', 'like', '%'.$searchQuery.'%')
-                        ->orWhere('store_city', 'like', '%'.$searchQuery.'%');
-                })
+            $matchedUsers = User::searchablePublic($searchQuery)
                 ->withCount('products')
                 ->take(6)
                 ->get();

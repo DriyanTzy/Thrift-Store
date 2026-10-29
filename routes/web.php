@@ -21,6 +21,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [ProductController::class, 'index'])->name('products.index');
+Route::get('/cart', function () {
+    return view('cart.index');
+})->name('cart.index');
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/shop/{userId}', [SellerController::class, 'showStore'])->name('shop.store');
 

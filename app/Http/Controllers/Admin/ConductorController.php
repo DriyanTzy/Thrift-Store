@@ -11,35 +11,37 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Services\RevenueSplitService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
 class ConductorController extends Controller
 {
+    public function __construct(
+        private readonly RevenueSplitService $revenueSplitService
+    ) {}
+
     /**
      * Tampilkan Conductor Control Center (Pusat Kendali Admin Terpadu)
      */
     public function index()
     {
         // 1. Metrik Keuangan & Penjualan
-        $totalGrossRevenue = Order::where('payment_status', 'paid')->sum('total_price');
+        $totalGrossRevenue = (float) Order::where('payment_status', 'paid')->sum('total_price');
         $totalOrdersCount = Order::count();
         $completedOrdersCount = Order::where('order_status', 'completed')->count();
         $pendingOrdersCount = Order::where('order_status', 'pending')->orWhere('payment_status', 'pending')->count();
 
-        // Bisnis Logic: Harga masuk 100% - 12% potongan
-        // 5% profit aplikator + 3% pajak + 4% operasional = 12% total potongan
-        $applicatorProfitRate = 0.05;
-        $taxRate = 0.03;
-        $operationalRate = 0.04;
-        $totalDeductionRate = $applicatorProfitRate + $taxRate + $operationalRate; // 0.12 = 12%
+        // Gunakan Value Object RevenueSplit via Service
+        $split = $this->revenueSplitService->split($totalGrossRevenue);
 
-        $applicatorProfit = $totalGrossRevenue * $applicatorProfitRate;
-        $taxAmount = $totalGrossRevenue * $taxRate;
-        $operationalCost = $totalGrossRevenue * $operationalRate;
-        $totalDeductions = $totalGrossRevenue * $totalDeductionRate;
-        $netRevenue = $totalGrossRevenue - $totalDeductions; // 88% dari gross
+        $applicatorProfit = $split->getApplicatorFee();
+        $taxAmount = $split->getTax();
+        $operationalCost = $split->getOperationalCost();
+        $totalDeductions = $split->getTotalDeductions();
+        $netRevenue = $split->getNetSellerAmount();
+        $totalDeductionRate = 0.12; // 12% total deduction rate
 
         // 2. Metrik Pengguna & Ekosistem (1 akun tetap 1 akun walau membuka store/toko)
         $totalUsers = User::distinct()->count('id');

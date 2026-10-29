@@ -5,21 +5,23 @@
 <style>
     .chat-container {
         display: grid;
-        grid-template-columns: 340px 1fr;
+        grid-template-columns: 360px 1fr;
         height: 720px;
+        max-height: 720px;
         background: #FFFFFF;
         border: 1.5px solid #E2E8F0;
         border-radius: 24px;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
         margin-bottom: 2rem;
     }
 
     @media (max-width: 900px) {
         .chat-container {
             grid-template-columns: 1fr;
-            height: auto;
-            min-height: 600px;
+            height: calc(100vh - 120px);
+            max-height: 720px;
+            min-height: 550px;
         }
         .chat-sidebar {
             display: {{ $activeConversation ? 'none' : 'flex' }} !important;
@@ -34,52 +36,36 @@
         border-right: 1.5px solid #E2E8F0;
         display: flex;
         flex-direction: column;
-        background: #F8FAFC;
+        background: #FFFFFF;
+        height: 100%;
+        max-height: 100%;
+        overflow: hidden;
     }
 
     .chat-sidebar-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #E2E8F0;
+        padding: 1.5rem 1.75rem 1rem 1.75rem;
         background: #FFFFFF;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-shrink: 0;
     }
 
     .chat-sidebar-title {
-        font-size: 1.2rem;
-        font-weight: 900;
-        color: #0F172A;
-        letter-spacing: -0.3px;
-    }
-
-    .chat-search-wrap {
-        padding: 0.85rem 1.25rem;
-        background: #FFFFFF;
-        border-bottom: 1px solid #E2E8F0;
-    }
-
-    .chat-search-input {
-        width: 100%;
-        background: #F1F5F9;
-        border: 1px solid #CBD5E1;
-        border-radius: 50px;
-        padding: 0.55rem 1rem 0.55rem 2.25rem;
-        font-size: 0.85rem;
-        outline: none;
-        box-sizing: border-box;
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #000000;
+        letter-spacing: -0.5px;
     }
 
     .chat-conv-list {
         flex: 1;
         overflow-y: auto;
+        min-height: 0;
     }
 
     .chat-conv-item {
         display: flex;
         align-items: center;
-        gap: 0.85rem;
-        padding: 1rem 1.25rem;
+        gap: 1rem;
+        padding: 1rem 1.75rem;
         border-bottom: 1px solid #F1F5F9;
         cursor: pointer;
         text-decoration: none;
@@ -88,42 +74,45 @@
     }
 
     .chat-conv-item:hover {
-        background: #F1F5F9;
+        background: #F8FAFC;
     }
 
     .chat-conv-item.active {
-        background: #FFFFFF;
-        border-left: 4px solid #0F172A;
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+        background: #F8FAFC;
     }
 
-    .chat-avatar {
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
-        background: #0F172A;
-        color: #22C55E;
+    .chat-avatar-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #E07A7A;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: 900;
+        color: #FFF;
+        font-weight: 800;
         font-size: 1.1rem;
         flex-shrink: 0;
-        position: relative;
+        overflow: hidden;
     }
 
-    .chat-avatar.user-avatar {
-        background: #3B82F6;
-        color: #FFF;
+    .chat-avatar-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    .chat-unread-badge {
+    .chat-unread-badge-red {
         background: #EF4444;
         color: #FFF;
         font-size: 0.7rem;
         font-weight: 800;
-        padding: 2px 7px;
-        border-radius: 20px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         margin-left: auto;
         flex-shrink: 0;
     }
@@ -132,184 +121,172 @@
     .chat-main {
         display: flex;
         flex-direction: column;
-        background: #FFFFFF;
+        background: #EFEFEF;
         position: relative;
+        height: 100%;
+        max-height: 100%;
+        min-height: 0;
+        overflow: hidden;
     }
 
     .chat-header {
-        padding: 1.1rem 1.5rem;
+        padding: 1rem 1.75rem;
         border-bottom: 1px solid #E2E8F0;
         display: flex;
         align-items: center;
         justify-content: space-between;
         background: #FFFFFF;
         z-index: 10;
+        flex-shrink: 0;
     }
 
     .chat-header-info {
         display: flex;
         align-items: center;
-        gap: 0.85rem;
-    }
-
-    .chat-product-bar {
-        background: #F8FAFC;
-        border-bottom: 1px solid #E2E8F0;
-        padding: 0.75rem 1.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
         gap: 1rem;
     }
 
-    .chat-product-thumb {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-        background: #EEF2F6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
     .chat-messages-body {
-        flex: 1;
+        flex: 1 1 auto;
         overflow-y: auto;
-        padding: 1.5rem;
-        background: #F8FAFC;
+        min-height: 0;
+        max-height: 100%;
+        padding: 2rem 1.75rem;
+        background: #EFEFEF;
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
+        gap: 1.25rem;
+        scroll-behavior: smooth;
+        overscroll-behavior: contain;
+    }
+
+    /* Custom subtle scrollbar */
+    .chat-messages-body::-webkit-scrollbar,
+    .chat-conv-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-messages-body::-webkit-scrollbar-track,
+    .chat-conv-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-messages-body::-webkit-scrollbar-thumb,
+    .chat-conv-list::-webkit-scrollbar-thumb {
+        background: #CBD5E1;
+        border-radius: 10px;
+    }
+
+    .chat-messages-body::-webkit-scrollbar-thumb:hover,
+    .chat-conv-list::-webkit-scrollbar-thumb:hover {
+        background: #94A3B8;
     }
 
     .chat-bubble {
-        max-width: 65%;
-        padding: 0.85rem 1.15rem;
-        border-radius: 16px;
-        font-size: 0.9rem;
-        line-height: 1.45;
+        max-width: 60%;
+        padding: 1.1rem 1.5rem;
+        border-radius: 20px;
+        font-size: 0.95rem;
+        line-height: 1.5;
         position: relative;
         word-break: break-word;
+        animation: chatFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        flex-shrink: 0;
+    }
+
+    @keyframes chatFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .chat-bubble.me {
         align-self: flex-end;
-        background: #0F172A;
+        background: #000000;
         color: #FFFFFF;
-        border-bottom-right-radius: 4px;
-        box-shadow: 0 4px 12px rgba(15,23,42,0.15);
+        border-top-right-radius: 4px;
+        font-weight: 700;
     }
 
     .chat-bubble.other {
         align-self: flex-start;
         background: #FFFFFF;
-        color: #0F172A;
+        color: #000000;
         border: 1px solid #E2E8F0;
-        border-bottom-left-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-
-    .chat-bubble-time {
-        font-size: 0.68rem;
-        margin-top: 0.35rem;
-        text-align: right;
-        opacity: 0.75;
-    }
-
-    .chat-bubble.me .chat-bubble-time {
-        color: #94A3B8;
-    }
-
-    .chat-bubble.other .chat-bubble-time {
-        color: #64748B;
+        border-top-left-radius: 4px;
+        font-weight: 600;
     }
 
     .chat-footer {
-        padding: 1rem 1.5rem;
+        padding: 1.25rem 1.75rem;
         background: #FFFFFF;
         border-top: 1px solid #E2E8F0;
+        flex-shrink: 0;
     }
 
     .chat-form {
         display: flex;
-        gap: 0.75rem;
+        gap: 0.85rem;
         align-items: center;
     }
 
     .chat-input {
         flex: 1;
-        background: #F8FAFC;
+        background: #FFFFFF;
         border: 1.5px solid #CBD5E1;
         border-radius: 50px;
-        padding: 0.75rem 1.25rem;
-        font-size: 0.9rem;
+        padding: 0.85rem 1.5rem;
+        font-size: 0.95rem;
         outline: none;
-        transition: all 0.2s;
+        transition: border-color 0.15s ease;
         font-family: inherit;
+        color: #000;
     }
 
     .chat-input:focus {
-        border-color: #0F172A;
-        background: #FFFFFF;
+        border-color: #000000;
+    }
+
+    .chat-input::placeholder {
+        color: #94A3B8;
     }
 
     .chat-send-btn {
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        background: #0F172A;
+        background: #000000;
         color: #FFFFFF;
         border: none;
+        border-radius: 50px;
+        padding: 0.85rem 1.75rem;
+        font-size: 0.95rem;
+        font-weight: 700;
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        box-shadow: 0 4px 12px rgba(15,23,42,0.25);
-        transition: all 0.2s;
-        flex-shrink: 0;
+        transition: transform 0.1s ease, opacity 0.15s ease;
+        font-family: inherit;
     }
 
     .chat-send-btn:hover {
-        background: #1E293B;
-        transform: scale(1.05);
+        opacity: 0.85;
+    }
+
+    .chat-send-btn:active {
+        transform: scale(0.96);
     }
 </style>
 @endpush
 
 <div style="max-width: 1200px; margin: 0 auto;">
 
-    <!-- Top Breadcrumb -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #64748B; font-weight: 700;">
-            <a href="{{ route('products.index') }}" style="color: #64748B; text-decoration: none;"><i class="fa-solid fa-house"></i> Home</a>
-            <i class="fa-solid fa-chevron-right" style="font-size: 0.7rem;"></i>
-            <span style="color: #0F172A; font-weight: 800;">Pesan & Chat Toko</span>
-        </div>
-        <div style="font-size: 0.8rem; font-weight: 800; color: #16A34A; background: #DCFCE7; padding: 0.3rem 0.85rem; border-radius: 30px;">
-            <i class="fa-solid fa-comments"></i> Live Chat Buyer & Seller
-        </div>
-    </div>
-
-    <!-- Main Chat Container -->
     <div class="chat-container">
 
-        <!-- 1. LEFT SIDEBAR: Conversation List -->
+        <!-- 1. LEFT SIDEBAR: Conversations List -->
         <div class="chat-sidebar">
             <div class="chat-sidebar-header">
-                <span class="chat-sidebar-title">Obrolan ({{ $conversations->count() }})</span>
-                <span style="font-size: 0.75rem; font-weight: 800; color: #64748B; background: #F1F5F9; padding: 0.2rem 0.55rem; border-radius: 8px;">
-                    1 Akun 2 Profil
-                </span>
-            </div>
-
-            <div class="chat-search-wrap">
-                <div style="position: relative;">
-                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 0.8rem;"></i>
-                    <input type="text" id="conv-search" class="chat-search-input" placeholder="Cari nama toko / pengguna..." onkeyup="filterConversations()">
-                </div>
+                <span class="chat-sidebar-title">Chat</span>
             </div>
 
             <div class="chat-conv-list" id="conv-list">
@@ -317,48 +294,58 @@
                     @php
                         $isMeBuyer = ($conv->buyer_id === auth()->id());
                         $counterparty = $isMeBuyer ? $conv->seller : $conv->buyer;
-                        // Jika counterparty adalah penjual, tampilkan nama tokonya!
                         $displayName = $isMeBuyer ? $counterparty->store_name : $counterparty->name;
-                        $displaySub = $isMeBuyer ? 'Toko Penjual' : 'Pembeli';
                         $unread = $conv->unreadCountFor(auth()->id());
                         $latest = $conv->latestMessage;
                         $isActive = $activeConversation && ($activeConversation->id === $conv->id);
+                        $bgColors = ['#E07A7A', '#5A1E1E', '#D97706', '#2563EB', '#4F46E5', '#059669'];
+                        $assignedColor = $bgColors[abs(crc32($displayName)) % count($bgColors)];
                     @endphp
 
                     <a href="{{ route('chat.index', ['conversation_id' => $conv->id]) }}" 
                        class="chat-conv-item {{ $isActive ? 'active' : '' }}"
                        data-name="{{ strtolower($displayName) }}">
                         
-                        <div class="chat-avatar {{ $isMeBuyer ? '' : 'user-avatar' }}">
-                            <i class="fa-solid {{ $isMeBuyer ? 'fa-store' : 'fa-user' }}"></i>
+                        <!-- Circular Avatar -->
+                        <div class="chat-avatar-circle" style="background: {{ $assignedColor }};">
+                            @php
+                                $photoUrl = $counterparty->getProfilePictureForContext($isMeBuyer);
+                            @endphp
+                            @if($photoUrl)
+                                <img src="{{ $photoUrl }}" alt="{{ $displayName }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            @else
+                                {{ strtoupper(substr($displayName, 0, 1)) }}
+                            @endif
                         </div>
 
                         <div style="flex: 1; min-width: 0;">
-                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.2rem;">
-                                <div style="font-weight: 800; font-size: 0.9rem; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="{{ $displayName }}">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem;">
+                                <div style="font-weight: 800; font-size: 0.95rem; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="{{ $displayName }}">
                                     {{ $displayName }}
                                 </div>
-                                <span style="font-size: 0.7rem; color: #94A3B8;">
-                                    {{ $latest ? $latest->created_at->format('H:i') : '' }}
+                                <span style="font-size: 0.75rem; color: #94A3B8; font-weight: 500;">
+                                    @if($latest)
+                                        {{ $latest->created_at->isToday() ? $latest->created_at->format('H:i') : ($latest->created_at->isYesterday() ? 'Kemarin' : $latest->created_at->format('d/m')) }}
+                                    @endif
                                 </span>
                             </div>
 
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
-                                <p style="font-size: 0.78rem; color: #64748B; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <p style="font-size: 0.85rem; color: #64748B; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     {{ $latest ? $latest->message : 'Mulai percakapan...' }}
                                 </p>
                                 @if($unread > 0)
-                                    <span class="chat-unread-badge">{{ $unread }}</span>
+                                    <span class="chat-unread-badge-red">{{ $unread }}</span>
                                 @endif
                             </div>
                         </div>
 
                     </a>
                 @empty
-                    <div style="padding: 3rem 1.5rem; text-align: center; color: #94A3B8;">
+                    <div style="padding: 4rem 1.5rem; text-align: center; color: #94A3B8;">
                         <i class="fa-regular fa-comments fa-3x" style="color: #CBD5E1; margin-bottom: 0.75rem; display: block;"></i>
-                        <div style="font-weight: 800; font-size: 0.95rem; color: #0F172A; margin-bottom: 0.25rem;">Belum ada pesan</div>
-                        <p style="font-size: 0.8rem; margin: 0;">Mulai obrolan dengan mengklik tombol "Chat Penjual" di halaman barang atau etalase toko.</p>
+                        <div style="font-weight: 800; font-size: 1rem; color: #000; margin-bottom: 0.25rem;">Belum ada pesan</div>
+                        <p style="font-size: 0.85rem; margin: 0;">Mulai obrolan dengan penjual di etalase toko.</p>
                     </div>
                 @endforelse
             </div>
@@ -371,79 +358,33 @@
                     $isMeBuyer = ($activeConversation->buyer_id === auth()->id());
                     $counterparty = $isMeBuyer ? $activeConversation->seller : $activeConversation->buyer;
                     $partnerName = $isMeBuyer ? $counterparty->store_name : $counterparty->name;
-                    $partnerType = $isMeBuyer ? 'Penjual (Toko Resmi)' : 'Pembeli';
-                    $partnerCity = $counterparty->store_city ?? 'Indonesia';
-                    $product = $activeConversation->product;
+                    $bgColors = ['#E07A7A', '#5A1E1E', '#D97706', '#2563EB', '#4F46E5', '#059669'];
+                    $headerColor = $bgColors[abs(crc32($partnerName)) % count($bgColors)];
                 @endphp
 
-                <!-- Header -->
+                <!-- Top Header -->
                 <div class="chat-header">
                     <div class="chat-header-info">
-                        <div class="chat-avatar {{ $isMeBuyer ? '' : 'user-avatar' }}" style="width: 44px; height: 44px;">
-                            <i class="fa-solid {{ $isMeBuyer ? 'fa-store' : 'fa-user' }}"></i>
+                        @php
+                            $headerPhotoUrl = $counterparty->getProfilePictureForContext($isMeBuyer);
+                        @endphp
+                        <div class="chat-avatar-circle" style="width: 44px; height: 44px; background: {{ $headerColor }};">
+                            @if($headerPhotoUrl)
+                                <img src="{{ $headerPhotoUrl }}" alt="{{ $partnerName }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            @else
+                                {{ strtoupper(substr($partnerName, 0, 1)) }}
+                            @endif
                         </div>
                         <div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <h3 style="font-size: 1.05rem; font-weight: 900; color: #0F172A; margin: 0;">
-                                    {{ $partnerName }}
-                                </h3>
-                                <span style="background: rgba(34,197,94,0.12); color: #16A34A; font-size: 0.7rem; font-weight: 800; padding: 2px 7px; border-radius: 12px;">
-                                    {{ $partnerType }}
-                                </span>
-                            </div>
-                            <div style="font-size: 0.75rem; color: #64748B; margin-top: 0.15rem;">
-                                <i class="fa-solid fa-location-dot" style="color: #22C55E;"></i> {{ $partnerCity }} • Aktif Baru Saja
+                            <h3 style="font-size: 1.05rem; font-weight: 800; color: #000; margin: 0;">
+                                {{ $partnerName }}
+                            </h3>
+                            <div style="font-size: 0.75rem; color: #16A34A; font-weight: 700; margin-top: 0.1rem;">
+                                online
                             </div>
                         </div>
                     </div>
-
-                    @if($isMeBuyer && $counterparty->id)
-                        <a href="{{ route('shop.store', $counterparty->id) }}" style="background: #F1F5F9; color: #0F172A; font-weight: 800; font-size: 0.8rem; padding: 0.5rem 1rem; border-radius: 10px; text-decoration: none; border: 1px solid #CBD5E1; display: inline-flex; align-items: center; gap: 0.35rem;">
-                            <i class="fa-solid fa-store" style="color: #22C55E;"></i> Kunjungi Toko
-                        </a>
-                    @endif
                 </div>
-
-                <!-- Product Reference Bar (If conversation is about a product) -->
-                @if($product)
-                    @php
-                        $prodImg = $product->images->count() > 0 ? asset('storage/' . $product->images->first()->image_path) : ($product->image ? asset('storage/' . $product->image) : null);
-                    @endphp
-                    <div class="chat-product-bar">
-                        <div style="display: flex; align-items: center; gap: 0.85rem; flex: 1; min-width: 0;">
-                            <div class="chat-product-thumb">
-                                @if($prodImg)
-                                    <img src="{{ $prodImg }}" alt="{{ $product->name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                                @else
-                                    <i class="fa-solid fa-shirt" style="color: #64748B;"></i>
-                                @endif
-                            </div>
-                            <div style="min-width: 0;">
-                                <div style="font-weight: 800; font-size: 0.88rem; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    {{ $product->name }}
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.15rem;">
-                                    <span style="font-weight: 900; font-size: 0.85rem; color: #0F172A;">
-                                        Rp {{ number_format($product->price, 0, ',', '.') }}
-                                    </span>
-                                    @if($product->stock <= 0)
-                                        <span style="background: #FEE2E2; color: #DC2626; font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">
-                                            Stok Habis
-                                        </span>
-                                    @else
-                                        <span style="background: #DCFCE7; color: #16A34A; font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">
-                                            Stok: {{ $product->stock }} Ready
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-
-                        <a href="{{ route('products.show', $product->slug) }}" target="_blank" style="background: #0F172A; color: #FFF; font-weight: 800; font-size: 0.78rem; padding: 0.45rem 0.9rem; border-radius: 8px; text-decoration: none; white-space: nowrap;">
-                            Buka Barang <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.7rem; margin-left: 0.2rem;"></i>
-                        </a>
-                    </div>
-                @endif
 
                 <!-- Chat Messages Body -->
                 <div class="chat-messages-body" id="messages-container">
@@ -452,18 +393,12 @@
                             $isMe = ($msg->sender_id === auth()->id());
                         @endphp
                         <div class="chat-bubble {{ $isMe ? 'me' : 'other' }}" data-id="{{ $msg->id }}">
-                            <div>{{ $msg->message }}</div>
-                            <div class="chat-bubble-time">
-                                {{ $msg->created_at->format('H:i') }}
-                                @if($isMe)
-                                    <i class="fa-solid fa-check-double" style="margin-left: 0.25rem; font-size: 0.65rem; color: {{ $msg->is_read ? '#4ADE80' : '#94A3B8' }};"></i>
-                                @endif
-                            </div>
+                            <div>{!! nl2br(e($msg->message)) !!}</div>
                         </div>
                     @empty
-                        <div style="text-align: center; padding: 3rem 1rem; color: #94A3B8;">
+                        <div style="text-align: center; padding: 4rem 1rem; color: #94A3B8;">
                             <i class="fa-regular fa-comment-dots fa-3x" style="color: #CBD5E1; margin-bottom: 0.5rem; display: block;"></i>
-                            <p style="margin: 0; font-size: 0.85rem;">Mulai percakapan Anda dengan mengirimkan pesan di bawah ini.</p>
+                            <p style="margin: 0; font-size: 0.9rem;">Mulai percakapan Anda dengan mengirimkan pesan di bawah ini.</p>
                         </div>
                     @endforelse
                 </div>
@@ -472,10 +407,9 @@
                 <div class="chat-footer">
                     <form id="chat-form" action="{{ route('chat.message', $activeConversation->id) }}" method="POST" class="chat-form" onsubmit="submitChatMessage(event)">
                         @csrf
-                        <input type="hidden" name="product_id" value="{{ $product?->id }}">
-                        <input type="text" id="chat-text-input" name="message" class="chat-input" placeholder="Ketik pesan Anda di sini..." autocomplete="off" required>
-                        <button type="submit" class="chat-send-btn" title="Kirim Pesan">
-                            <i class="fa-solid fa-paper-plane"></i>
+                        <input type="text" id="chat-text-input" name="message" class="chat-input" placeholder="Tulis pesan..." autocomplete="off" required>
+                        <button type="submit" class="chat-send-btn">
+                            Kirim
                         </button>
                     </form>
                 </div>
@@ -483,12 +417,12 @@
             @else
                 <!-- No Conversation Selected State -->
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 2rem; text-align: center; color: #94A3B8;">
-                    <div style="width: 80px; height: 80px; border-radius: 50%; background: #F1F5F9; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #CBD5E1; margin-bottom: 1.25rem;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #CBD5E1; margin-bottom: 1.25rem;">
                         <i class="fa-regular fa-comments"></i>
                     </div>
-                    <h3 style="font-size: 1.25rem; font-weight: 900; color: #0F172A; margin: 0 0 0.4rem;">Pilih Obrolan</h3>
+                    <h3 style="font-size: 1.25rem; font-weight: 800; color: #000; margin: 0 0 0.4rem;">Pilih Obrolan</h3>
                     <p style="font-size: 0.9rem; max-width: 360px; margin: 0; line-height: 1.5;">
-                        Pilih salah satu kontak percakapan di bilah kiri atau kunjungi produk/toko untuk memulai chat baru.
+                        Pilih salah satu kontak percakapan di bilah kiri untuk membuka chat.
                     </p>
                 </div>
             @endif
@@ -500,7 +434,6 @@
 
 @push('scripts')
 <script>
-    // Scroll chat to bottom
     function scrollToBottom() {
         const container = document.getElementById('messages-container');
         if (container) {
@@ -509,94 +442,91 @@
     }
     scrollToBottom();
 
-    // Filter conversations on sidebar
-    function filterConversations() {
-        const query = document.getElementById('conv-search').value.toLowerCase();
-        document.querySelectorAll('.chat-conv-item').forEach(el => {
-            const name = el.getAttribute('data-name') || '';
-            el.style.display = name.includes(query) ? 'flex' : 'none';
-        });
-    }
-
-    @if($activeConversation)
-    // AJAX message submission for instant smooth messaging
-    async function submitChatMessage(e) {
+    function submitChatMessage(e) {
         e.preventDefault();
         const input = document.getElementById('chat-text-input');
-        const text = input.value.trim();
-        if (!text) return;
+        const message = input.value.trim();
+        if (!message) return;
+
+        const form = document.getElementById('chat-form');
+        const url = form.action;
+        const csrfToken = document.querySelector('input[name="_token"]').value;
+
+        // Optimistic UI append
+        const container = document.getElementById('messages-container');
+        const tempId = 'temp_' + Date.now();
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble me';
+        bubble.id = tempId;
+        bubble.innerHTML = `<div>${escapeHtml(message)}</div>`;
+        container.appendChild(bubble);
+        scrollToBottom();
 
         input.value = '';
 
-        // Optimistically render message
-        const container = document.getElementById('messages-container');
-        const tempBubble = document.createElement('div');
-        tempBubble.className = 'chat-bubble me';
-        const now = new Date();
-        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-        tempBubble.innerHTML = `<div>${escapeHtml(text)}</div><div class="chat-bubble-time">${timeStr} <i class="fa-solid fa-check" style="margin-left: 0.25rem; font-size: 0.65rem;"></i></div>`;
-        container.appendChild(tempBubble);
-        scrollToBottom();
-
-        try {
-            const formData = new FormData(document.getElementById('chat-form'));
-            formData.set('message', text);
-
-            const res = await fetch("{{ route('chat.message', $activeConversation->id) }}", {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: formData
-            });
-            const data = await res.json();
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        })
+        .then(r => r.json())
+        .then(data => {
             if (data.success && data.message) {
-                tempBubble.setAttribute('data-id', data.message.id);
+                const el = document.getElementById(tempId);
+                if (el) el.setAttribute('data-id', data.message.id);
             }
-        } catch (err) {
-            console.error('Chat error:', err);
-        }
+        })
+        .catch(() => {
+            const el = document.getElementById(tempId);
+            if (el) el.style.opacity = '0.5';
+        });
     }
 
-    // Polling new incoming messages every 3 seconds
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.innerText = text;
+        return div.innerHTML;
+    }
+
+    // Polling new messages
+    @if($activeConversation)
     let lastMsgId = 0;
-    const existingBubbles = document.querySelectorAll('.chat-bubble');
+    const existingBubbles = document.querySelectorAll('.chat-bubble[data-id]');
     if (existingBubbles.length > 0) {
-        const lastEl = existingBubbles[existingBubbles.length - 1];
-        lastMsgId = parseInt(lastEl.getAttribute('data-id') || '0', 10);
+        lastMsgId = parseInt(existingBubbles[existingBubbles.length - 1].getAttribute('data-id')) || 0;
     }
 
-    setInterval(async () => {
-        try {
-            const res = await fetch("{{ route('chat.fetch', $activeConversation->id) }}?after_id=" + lastMsgId);
-            const data = await res.json();
-            if (data.messages && data.messages.length > 0) {
+    function fetchNewMessages() {
+        fetch("{{ route('chat.fetch', $activeConversation->id) }}?last_id=" + lastMsgId, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.messages && data.messages.length > 0) {
                 const container = document.getElementById('messages-container');
-                data.messages.forEach(m => {
-                    if (m.id > lastMsgId) {
-                        lastMsgId = m.id;
-                        if (!m.is_me) {
-                            const b = document.createElement('div');
-                            b.className = 'chat-bubble other';
-                            b.setAttribute('data-id', m.id);
-                            b.innerHTML = `<div>${escapeHtml(m.message)}</div><div class="chat-bubble-time">${m.created_at}</div>`;
-                            container.appendChild(b);
+                data.messages.forEach(msg => {
+                    if (msg.id > lastMsgId) {
+                        lastMsgId = msg.id;
+                        if (!msg.is_me) {
+                            const bubble = document.createElement('div');
+                            bubble.className = 'chat-bubble other';
+                            bubble.setAttribute('data-id', msg.id);
+                            bubble.innerHTML = `<div>${escapeHtml(msg.message)}</div>`;
+                            container.appendChild(bubble);
                             scrollToBottom();
                         }
                     }
                 });
             }
-        } catch (e) {
-            // Ignore background polling errors
-        }
-    }, 3000);
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        })
+        .catch(() => {});
     }
+
+    setInterval(fetchNewMessages, 3000);
     @endif
 </script>
 @endpush

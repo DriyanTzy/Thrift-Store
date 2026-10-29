@@ -216,9 +216,9 @@
 <div class="register-card">
     <!-- Header -->
     <div class="register-header">
-        <div class="register-logo">RL</div>
+        <img src="{{ asset('logo.png') }}" alt="Ruang Lemari" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 0.5rem;">
         <div class="register-app-name">Ruang Lemari</div>
-        <div class="register-subtitle">Buat Akun Pembeli / Penjual</div>
+        <div class="register-subtitle">Semua Langanan dalam satu tempat</div>
     </div>
 
     <!-- Form -->

@@ -2,13 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AdminLoginRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Services\Auth\AdminAuthService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private readonly AdminAuthService $adminAuthService
+    ) {}
+
     /**
      * Tampilkan formulir masuk pelanggan (Customer / Seller Portal)
      */
@@ -29,16 +39,13 @@ class AuthController extends Controller
      * Proses masuk pelanggan / pembeli / penjual umum
      * Pintu ini secara tegas menolak login akun Administrator untuk menjaga privasi & segregasi hak akses.
      */
-    public function login(Request $request)
+    public function login(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        $credentials = $request->validated();
 
         if (Auth::attempt($credentials)) {
             // Segregasi pintu: Admin dilarang login melalui portal pelanggan
-            if (Auth::user()->is_admin) {
+            if (Auth::user()->isAdmin()) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -61,9 +68,9 @@ class AuthController extends Controller
     /**
      * Tampilkan portal masuk khusus Administrator (Conductor Restricted Gate)
      */
-    public function showAdminLogin()
+    public function showAdminLogin(): View|RedirectResponse
     {
-        if (Auth::check() && Auth::user()->is_admin) {
+        if (Auth::check() && Auth::user()->isAdmin()) {
             return redirect()->route('admin.conductor');
         }
 
@@ -75,15 +82,9 @@ class AuthController extends Controller
      * Pintu ini memverifikasi bahwa akun yang masuk memiliki otoritas is_admin = true.
      * Mendukung ID Conductor ("conductor") maupun email administrator resmi.
      */
-    public function adminLogin(Request $request)
+    public function adminLogin(AdminLoginRequest $request): RedirectResponse
     {
-        $request->validate([
-            'login_id' => 'nullable|string',
-            'email' => 'nullable|string',
-            'password' => 'required|string',
-        ]);
-
-        $identifier = trim((string) ($request->input('login_id') ?: $request->input('email')));
+        $identifier = $request->getIdentifier();
         $password = (string) $request->input('password');
 
         if (! $identifier) {
@@ -93,60 +94,10 @@ class AuthController extends Controller
             ])->onlyInput('login_id', 'email');
         }
 
-        // Fast-path otentikasi khusus Conductor Commander:
-        // ID: conductor, Password: takutyadek
-        if (strtolower($identifier) === 'conductor' && $password === 'takutyadek') {
-            $conductorUser = User::where('email', 'conductor@ruanglemari.com')
-                ->orWhere('player_tag', 'conductor')
-                ->first();
+        // Verifikasi kredensial Administrator via AdminAuthService
+        $user = $this->adminAuthService->authenticate($identifier, $password);
 
-            if (! $conductorUser) {
-                // Buat atau pastikan akun conductor ada
-                $conductorUser = User::updateOrCreate(
-                    ['email' => 'conductor@ruanglemari.com'],
-                    [
-                        'name' => 'Conductor Control Admin',
-                        'player_tag' => 'conductor',
-                        'password' => Hash::make('takutyadek'),
-                        'is_admin' => true,
-                    ]
-                );
-            } else {
-                // Pastikan status admin aktif dan password sinkron
-                if (! $conductorUser->is_admin || ! Hash::check('takutyadek', $conductorUser->password)) {
-                    $conductorUser->is_admin = true;
-                    $conductorUser->password = Hash::make('takutyadek');
-                    $conductorUser->save();
-                }
-            }
-
-            Auth::login($conductorUser);
-            $request->session()->regenerate();
-
-            return redirect()->intended('/admin/conductor')->with('success', 'Otorisasi terverifikasi. Selamat datang di Conductor Control Center!');
-        }
-
-        // Cari user berdasarkan email, player_tag, atau name
-        $user = User::where(function ($q) use ($identifier) {
-            $q->where('email', $identifier)
-                ->orWhere('player_tag', $identifier)
-                ->orWhere('name', $identifier);
-        })->first();
-
-        // Fallback jika identifier adalah 'conductor' dan user mencoba password lain
-        if (! $user && strtolower($identifier) === 'conductor') {
-            $user = User::where('is_admin', true)->first();
-        }
-
-        if ($user && Hash::check($password, $user->password)) {
-            // Segregasi pintu: Pengguna biasa dilarang login melalui portal admin
-            if (! $user->is_admin) {
-                return back()->withErrors([
-                    'login_id' => 'Akses ditolak! Akun ini tidak memiliki hak akses Administrator.',
-                    'email' => 'Akses ditolak! Akun ini tidak memiliki hak akses Administrator.',
-                ])->onlyInput('login_id', 'email');
-            }
-
+        if ($user) {
             Auth::login($user);
             $request->session()->regenerate();
 
@@ -159,25 +110,20 @@ class AuthController extends Controller
         ])->onlyInput('login_id', 'email');
     }
 
-    public function showRegister()
+    public function showRegister(): View
     {
         return view('auth.register');
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-            'player_tag' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'player_tag' => $request->player_tag ? strtoupper($request->player_tag) : null,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'player_tag' => ! empty($validated['player_tag']) ? strtoupper($validated['player_tag']) : null,
             'is_admin' => false,
         ]);
 

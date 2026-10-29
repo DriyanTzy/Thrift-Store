@@ -207,9 +207,9 @@
 <div class="login-card">
     
     <div class="brand-header">
-        <div class="logo-box">RL</div>
+        <img src="{{ asset('logo.png') }}" alt="Ruang Lemari" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 0.5rem;">
         <h1 class="login-title">Control Panel Admin</h1>
-        <p class="login-subtitle">Masuk ke Panel Kendali Ruang Lemari</p>
+        <p class="login-subtitle">Semua Langanan dalam satu tempat</p>
     </div>
 
     @if(session('success'))

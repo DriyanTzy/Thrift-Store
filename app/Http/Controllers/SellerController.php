@@ -2,23 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\CreateProductDTO;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\StoreVoucherRequest;
+use App\Http\Requests\UpdateStockRequest;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\Review;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Voucher;
+use App\Services\ProductCatalogService;
+use App\ValueObjects\StoreMetrics;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class SellerController extends Controller
 {
+    public function __construct(
+        private readonly ProductCatalogService $catalogService
+    ) {}
+
     /**
      * Tampilkan Halaman Toko & Etalase Saya (Dashboard Penjual)
      */
-    public function store()
+    public function store(): View
     {
         $user = auth()->user();
         $products = Product::where('user_id', $user->id)
@@ -26,32 +37,25 @@ class SellerController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalItems = $products->count();
-        $activeItems = $products->where('stock', '>', 0)->count();
-        $soldOutItems = $products->where('stock', '<=', 0)->count();
+        // Hitung metrik toko via Value Object StoreMetrics
+        $metrics = StoreMetrics::forUser($user);
 
-        // Calculate store overall rating
+        $totalItems = $metrics->totalItems;
+        $activeItems = $metrics->activeItems;
+        $soldOutItems = $metrics->soldOutItems;
+        $storeRating = $metrics->rating;
+        $storeReviewCount = $metrics->reviewCount;
+        $totalStockIn = $metrics->totalStockIn;
+        $totalStockOut = $metrics->totalStockOut;
+        $totalCurrentStock = $metrics->currentStock;
+
+        // Riwayat Mutasi Stok & Harga
         $productIds = $products->pluck('id');
-        $storeReviews = Review::whereIn('product_id', $productIds)->get();
-        $storeReviewCount = $storeReviews->count();
-        $storeRating = $storeReviewCount > 0 ? round($storeReviews->avg('rating'), 1) : 5.0;
-
-        // Riwayat Mutasi Stok & Harga (Masuk, Keluar, Sisa)
         $stockMovements = StockMovement::whereIn('product_id', $productIds)
             ->with('product')
             ->orderBy('created_at', 'desc')
             ->take(30)
             ->get();
-
-        $totalStockIn = (int) StockMovement::whereIn('product_id', $productIds)
-            ->where('type', 'in')
-            ->sum('quantity');
-
-        $totalStockOut = (int) StockMovement::whereIn('product_id', $productIds)
-            ->where('type', 'out')
-            ->sum('quantity');
-
-        $totalCurrentStock = (int) $products->sum('stock');
 
         // Daftar Voucher Promo Toko Penjual
         $vouchers = Voucher::where('user_id', $user->id)
@@ -77,18 +81,9 @@ class SellerController extends Controller
     /**
      * Simpan kode voucher / promo toko baru milik seller
      */
-    public function storeVoucher(Request $request)
+    public function storeVoucher(StoreVoucherRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:vouchers,code',
-            'name' => 'required|string|max:100',
-            'discount_type' => 'required|in:percent,fixed',
-            'discount_value' => 'required|numeric|min:1',
-            'min_spend' => 'nullable|numeric|min:0',
-            'max_discount' => 'nullable|numeric|min:0',
-            'quota' => 'required|integer|min:1',
-        ]);
-
+        $validated = $request->validated();
         $validated['code'] = strtoupper(trim($validated['code']));
         $validated['type'] = 'seller';
         $validated['user_id'] = auth()->id();
@@ -101,54 +96,53 @@ class SellerController extends Controller
     }
 
     /**
-     * Aktifkan / Nonaktifkan voucher toko
+     * Ubah status aktif / nonaktif voucher toko
      */
-    public function toggleVoucher(Voucher $voucher)
+    public function toggleVoucher(Voucher $voucher): RedirectResponse
     {
-        if ($voucher->user_id !== auth()->id() && ! auth()->user()->is_admin) {
-            abort(403);
-        }
+        Gate::authorize('manage', $voucher);
 
         $voucher->update(['is_active' => ! $voucher->is_active]);
+        $statusText = $voucher->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
-        $status = $voucher->is_active ? 'diaktifkan' : 'dinonaktifkan';
-
-        return back()->with('success', "Voucher promo {$voucher->code} berhasil {$status}.");
+        return back()->with('success', 'Voucher "'.$voucher->code.'" berhasil '.$statusText.'.');
     }
 
     /**
      * Hapus voucher toko
      */
-    public function destroyVoucher(Voucher $voucher)
+    public function destroyVoucher(Voucher $voucher): RedirectResponse
     {
-        if ($voucher->user_id !== auth()->id() && ! auth()->user()->is_admin) {
-            abort(403);
-        }
+        Gate::authorize('manage', $voucher);
 
         $voucher->delete();
 
-        return back()->with('success', "Voucher promo {$voucher->code} berhasil dihapus.");
+        return back()->with('success', 'Voucher promo toko berhasil dihapus.');
     }
 
     /**
-     * Tampilkan Halaman Toko Publik Penjual (Bisa dilihat siapa saja)
+     * Tampilkan Halaman Profil Toko Publik (Dilihat oleh Pembeli lain)
      */
-    public function showStore($userId)
+    public function showStore(int|string $userId): View
     {
         $seller = User::findOrFail($userId);
+
         $products = Product::where('user_id', $seller->id)
+            ->where('is_active', true)
             ->with(['category', 'images', 'reviews'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalItems = $products->count();
-        $activeItems = $products->where('stock', '>', 0)->count();
-        $soldOutItems = $products->where('stock', '<=', 0)->count();
+        $metrics = StoreMetrics::forUser($seller);
+
+        $totalItems = $metrics->totalItems;
+        $activeItems = $metrics->activeItems;
+        $soldOutItems = $metrics->soldOutItems;
+        $storeRating = $metrics->rating;
+        $storeReviewCount = $metrics->reviewCount;
 
         $productIds = $products->pluck('id');
         $storeReviews = Review::whereIn('product_id', $productIds)->with(['product', 'user'])->get();
-        $storeReviewCount = $storeReviews->count();
-        $storeRating = $storeReviewCount > 0 ? round($storeReviews->avg('rating'), 1) : 5.0;
 
         return view('seller.public_store', compact(
             'seller',
@@ -163,9 +157,17 @@ class SellerController extends Controller
     }
 
     /**
+     * Alias untuk route yang memakai model binding (jika ada)
+     */
+    public function publicStore(User $seller): View
+    {
+        return $this->showStore($seller->id);
+    }
+
+    /**
      * Form Tambah Barang ke Etalase
      */
-    public function createProduct()
+    public function createProduct(): View
     {
         $categories = Category::all();
 
@@ -173,187 +175,107 @@ class SellerController extends Controller
     }
 
     /**
-     * Simpan Barang Baru ke Etalase Toko
+     * Simpan Barang Baru ke Etalase Toko via ProductCatalogService
      */
-    public function storeProduct(Request $request)
+    public function storeProduct(StoreProductRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'price' => 'required|numeric|min:0',
-            'cost_price' => 'nullable|numeric|min:0',
-            'stock' => 'required|integer|min:1',
-            'badge' => 'nullable|string|max:100',
-            'sizes' => 'nullable|array',
-            'description' => 'required|string',
-            'images' => 'required|array|min:1|max:5',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        ], [
-            'images.required' => 'Upload minimal 1 foto barang.',
-            'images.max' => 'Maksimal 5 foto per barang.',
-            'images.*.image' => 'File harus berupa gambar.',
-            'images.*.max' => 'Ukuran foto maksimal 2MB per file.',
-        ]);
+        $dto = CreateProductDTO::fromArray(
+            data: $request->validated(),
+            images: $request->file('images', [])
+        );
 
-        $slug = Str::slug($request->name).'-'.strtolower(Str::random(5));
+        $product = $this->catalogService->createProduct(auth()->user(), $dto);
 
-        // Use first image as main product thumbnail
-        $mainImagePath = null;
-        if ($request->hasFile('images')) {
-            $mainImagePath = $request->file('images')[0]->store('products', 'public');
-        }
-
-        // Process size stocks: map of ["Size" => StockQty]
-        $sizeStocks = [];
-        $totalStock = 0;
-        if ($request->has('size_stocks') && is_array($request->size_stocks)) {
-            foreach ($request->size_stocks as $sz => $qty) {
-                $q = max(0, intval($qty));
-                if ($q > 0) {
-                    $sizeStocks[$sz] = $q;
-                    $totalStock += $q;
-                }
-            }
-        }
-
-        // Fallback if user filled general stock but no individual size stocks
-        if (empty($sizeStocks)) {
-            $totalStock = max(1, intval($request->stock));
-            if ($request->has('sizes') && is_array($request->sizes)) {
-                $each = max(1, (int) floor($totalStock / max(1, count($request->sizes))));
-                foreach ($request->sizes as $sz) {
-                    $sizeStocks[$sz] = $each;
-                }
-            } else {
-                $sizeStocks['All Size'] = $totalStock;
-            }
-        }
-
-        $sizesJson = json_encode($sizeStocks);
-        $costPrice = $request->cost_price ?: round($request->price * 0.7);
-
-        $product = Product::create([
-            'user_id' => auth()->id(),
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'slug' => $slug,
-            'description' => $request->description,
-            'price' => $request->price,
-            'cost_price' => $costPrice,
-            'stock' => $totalStock,
-            'sizes' => $sizesJson,
-            'badge' => $request->badge,
-            'image' => $mainImagePath,
-            'is_active' => true,
-        ]);
-
-        // Catat stok awal masuk (In) secara akurat di kartu stok
-        StockMovement::create([
-            'product_id' => $product->id,
-            'user_id' => auth()->id(),
-            'type' => 'in',
-            'quantity' => $totalStock,
-            'stock_before' => 0,
-            'stock_after' => $totalStock,
-            'price' => $request->price,
-            'cost_price' => $costPrice,
-            'reference_type' => 'initial',
-            'notes' => 'Stok awal barang baru di etalase',
-        ]);
-
-        // Store all images in product_images table
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $index => $imageFile) {
-                $path = ($index === 0 && $mainImagePath)
-                    ? $mainImagePath
-                    : $imageFile->store('products', 'public');
-
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_path' => $path,
-                    'sort_order' => $index,
-                ]);
-            }
-        }
-
-        return redirect()->route('seller.store')->with('success', 'Barang "'.$request->name.'" berhasil ditambahkan ke Etalase Toko Anda dengan stok '.$totalStock.' item!');
+        return redirect()->route('seller.store')->with('success', 'Barang "'.$product->name.'" berhasil ditambahkan ke Etalase Toko Anda dengan stok '.$product->stock.' item!');
     }
 
     /**
      * Tambah Stok (Restock) atau Penyesuaian Stok & Harga Akurat
      */
-    public function updateStock(Request $request, Product $product)
+    public function updateStock(UpdateStockRequest $request, Product $product): RedirectResponse
     {
-        if ($product->user_id !== auth()->id()) {
-            abort(403, 'Akses Ditolak.');
-        }
-
-        $request->validate([
-            'type' => 'required|in:in,adjustment',
-            'quantity' => 'required|integer|min:1',
-            'price' => 'nullable|numeric|min:0',
-            'cost_price' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string|max:255',
-        ]);
+        Gate::authorize('updateStock', $product);
 
         $stockBefore = $product->stock;
+        $qty = intval($request->quantity);
 
         if ($request->type === 'in') {
-            $stockAfter = $stockBefore + (int) $request->quantity;
-            $notes = $request->notes ?: ('Restock penambahan +'.$request->quantity.' pcs');
-            $refType = 'restock';
+            $stockAfter = $stockBefore + $qty;
+            $typeLabel = 'in';
+            $defaultNotes = 'Penambahan Stok Barang (Restock) +'.$qty.' item';
         } else {
-            // Penyesuaian / adjustment ke jumlah baru
-            $stockAfter = max(0, (int) $request->quantity);
-            $notes = $request->notes ?: ('Penyesuaian stok menjadi '.$stockAfter.' pcs');
-            $refType = 'adjustment';
+            $stockAfter = $qty;
+            $qtyDiff = $stockAfter - $stockBefore;
+            $typeLabel = $qtyDiff >= 0 ? 'in' : 'out';
+            $defaultNotes = 'Penyesuaian Manual Stok dari '.$stockBefore.' menjadi '.$stockAfter;
         }
 
-        $product->stock = $stockAfter;
+        $newPrice = $request->filled('price') ? $request->price : $product->price;
+        $newCostPrice = $request->filled('cost_price') ? $request->cost_price : $product->cost_price;
 
-        if ($request->filled('price')) {
-            $product->price = $request->price;
-        }
+        $product->update([
+            'stock' => max(0, $stockAfter),
+            'price' => $newPrice,
+            'cost_price' => $newCostPrice,
+        ]);
 
-        if ($request->filled('cost_price')) {
-            $product->cost_price = $request->cost_price;
-        }
-
-        $product->save();
-
-        // Catat mutasi stok
         StockMovement::create([
             'product_id' => $product->id,
             'user_id' => auth()->id(),
-            'type' => $request->type,
-            'quantity' => $request->type === 'in' ? (int) $request->quantity : abs($stockAfter - $stockBefore),
+            'type' => $typeLabel,
+            'quantity' => abs($stockAfter - $stockBefore),
             'stock_before' => $stockBefore,
-            'stock_after' => $stockAfter,
-            'price' => $product->price,
-            'cost_price' => $product->cost_price,
-            'reference_type' => $refType,
-            'notes' => $notes,
+            'stock_after' => max(0, $stockAfter),
+            'price' => $newPrice,
+            'cost_price' => $newCostPrice ?: round($newPrice * 0.7),
+            'reference_type' => 'manual',
+            'notes' => $request->notes ?: $defaultNotes,
         ]);
 
-        return back()->with('success', 'Stok & Harga produk "'.$product->name.'" berhasil diperbarui! Sisa stok terkini: '.$stockAfter.' pcs.');
+        return redirect()->route('seller.store')->with('success', 'Stok dan harga barang "'.$product->name.'" berhasil diperbarui!');
     }
 
     /**
-     * Hapus Barang dari Etalase
+     * Update Pengaturan Informasi Toko Penjual
      */
-    public function destroyProduct(Product $product)
+    public function updateSettings(Request $request): RedirectResponse
     {
-        if ($product->user_id !== auth()->id()) {
-            abort(403, 'Akses Ditolak.');
+        $user = auth()->user();
+
+        $request->validate([
+            'store_name' => 'required|string|max:100',
+            'store_slogan' => 'nullable|string|max:255',
+            'store_city' => 'nullable|string|max:100',
+            'store_phone' => 'nullable|string|max:20',
+            'store_description' => 'nullable|string|max:1000',
+            'store_logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'store_banner' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:3072',
+        ]);
+
+        $data = [
+            'store_name' => $request->store_name,
+            'store_slogan' => $request->store_slogan,
+            'store_city' => $request->store_city,
+            'store_phone' => $request->store_phone,
+            'store_description' => $request->store_description,
+        ];
+
+        if ($request->hasFile('store_logo')) {
+            if ($user->store_logo) {
+                Storage::disk('public')->delete($user->store_logo);
+            }
+            $data['store_logo'] = $request->file('store_logo')->store('stores/logos', 'public');
         }
 
-        // Delete associated images from storage
-        foreach ($product->images as $img) {
-            Storage::disk('public')->delete($img->image_path);
+        if ($request->hasFile('store_banner')) {
+            if ($user->store_banner) {
+                Storage::disk('public')->delete($user->store_banner);
+            }
+            $data['store_banner'] = $request->file('store_banner')->store('stores/banners', 'public');
         }
 
-        $product->delete();
+        $user->update($data);
 
-        return redirect()->route('seller.store')->with('success', 'Barang berhasil dihapus dari etalase Anda.');
+        return redirect()->route('seller.store')->with('success', 'Informasi etalase toko berhasil diperbarui!');
     }
 }

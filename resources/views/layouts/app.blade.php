@@ -607,289 +607,113 @@
         }
 
         /* ============================================
-           CART SIDE DRAWER MODAL OVERLAY
+           ADD TO CART ANIMATION & MODERN TOAST
         ============================================ */
-        .rp-cart-backdrop {
+        .rp-flying-item {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 999;
-            opacity: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #000000;
+            border: 2px solid #22C55E;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(34, 197, 94, 0.4);
+            z-index: 99999;
             pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .rp-cart-backdrop.open {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transform: translate(-50%, -50%) scale(1);
+            transition: left 0.65s cubic-bezier(0.25, 1, 0.5, 1),
+                        top 0.65s cubic-bezier(0.5, 0, 0.75, 0),
+                        transform 0.65s ease-in,
+                        opacity 0.65s ease-in;
             opacity: 1;
-            pointer-events: auto;
         }
 
-        .rp-cart-drawer {
+        .rp-flying-item.flying {
+            transform: translate(-50%, -50%) scale(0.25);
+            opacity: 0.85;
+        }
+
+        @keyframes cartBadgeBounce {
+            0% { transform: scale(1); }
+            35% { transform: scale(1.6); background-color: #22C55E; color: #000; box-shadow: 0 0 14px rgba(34, 197, 94, 0.8); }
+            60% { transform: scale(0.9); }
+            80% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .rp-cart-bounce {
+            animation: cartBadgeBounce 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes cartIconPulse {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.3) rotate(-12deg); color: #22C55E; }
+            70% { transform: scale(1.1) rotate(6deg); }
+            100% { transform: scale(1) rotate(0deg); color: inherit; }
+        }
+
+        .rp-cart-icon-pulse {
+            animation: cartIconPulse 0.55s ease forwards;
+        }
+
+        /* Floating Toast Container */
+        .rp-toast-container {
             position: fixed;
-            top: 0;
-            right: 0;
-            width: 440px;
-            max-width: 100vw;
-            height: 100vh;
+            bottom: 24px;
+            right: 24px;
+            z-index: 99998;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .rp-cart-toast {
+            pointer-events: auto;
             background: #0F172A;
             color: #FFFFFF;
-            z-index: 1000;
-            box-shadow: -10px 0 40px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            transform: translateX(100%);
-            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .rp-cart-drawer.open {
-            transform: translateX(0);
-        }
-
-        /* Cart Drawer Top Header */
-        .rp-drawer-header {
-            padding: 1.25rem 1.5rem;
-            background: #020617;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .rp-drawer-header-title {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-weight: 800;
-            font-size: 1.1rem;
-        }
-
-        .rp-drawer-close-btn {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: #FFF;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .rp-drawer-close-btn:hover {
-            background: rgba(255,255,255,0.25);
-        }
-
-        /* Promo Bar */
-        .rp-promo-bar {
-            background: #020617;
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            font-size: 0.8rem;
-            color: #94A3B8;
-        }
-
-        .rp-promo-badge {
-            background: #22C55E;
-            color: #000;
-            font-weight: 900;
-            font-size: 0.75rem;
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-        }
-
-        /* Cart Items List */
-        .rp-drawer-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.25rem 1.5rem;
-            background: #0F172A;
-        }
-
-        .rp-select-all-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            font-size: 0.85rem;
-            color: #94A3B8;
-            font-weight: 600;
-        }
-
-        .rp-cart-item {
-            background: #1E293B;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.35);
             border-radius: 16px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            position: relative;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-        }
-
-        .rp-cart-item-check {
-            margin-top: 0.25rem;
-            accent-color: #22C55E;
-            transform: scale(1.2);
-            cursor: pointer;
-        }
-
-        .rp-cart-item-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #334155, #1E293B);
+            padding: 0.85rem 1.15rem;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            color: #FFF;
-            flex-shrink: 0;
-            border: 1px solid rgba(255,255,255,0.1);
+            gap: 0.85rem;
+            min-width: 320px;
+            max-width: 420px;
+            transform: translateY(25px) scale(0.95);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .rp-cart-item-info {
-            flex: 1;
-            min-width: 0;
+        .rp-cart-toast.show {
+            transform: translateY(0) scale(1);
+            opacity: 1;
         }
 
-        .rp-cart-item-name {
+        .rp-cart-toast-btn {
+            background: #22C55E;
+            color: #000000;
             font-weight: 800;
-            font-size: 0.95rem;
-            color: #FFF;
-            margin-bottom: 0.2rem;
-            line-height: 1.3;
-        }
-
-        .rp-cart-item-price {
-            font-size: 0.9rem;
-            font-weight: 800;
-            color: #22C55E;
-            margin-bottom: 0.75rem;
-        }
-
-        /* Qty controls */
-        .rp-qty-stepper {
+            font-size: 0.78rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            text-decoration: none;
+            white-space: nowrap;
             display: inline-flex;
             align-items: center;
-            background: #020617;
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .rp-qty-btn {
-            background: none;
-            border: none;
-            color: #FFF;
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            font-weight: 800;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .rp-qty-btn:hover {
-            background: rgba(255,255,255,0.15);
-        }
-
-        .rp-qty-val {
-            padding: 0 0.6rem;
-            font-size: 0.85rem;
-            font-weight: 800;
-            color: #FFF;
-        }
-
-        .rp-item-remove {
-            background: none;
-            border: none;
-            color: #94A3B8;
-            cursor: pointer;
-            font-size: 0.85rem;
-            padding: 0.25rem;
-            margin-left: auto;
-            transition: color 0.2s;
-        }
-
-        .rp-item-remove:hover {
-            color: #EF4444;
-        }
-
-        .rp-cart-bonus-box {
-            background: rgba(255,255,255,0.04);
-            border-radius: 10px;
-            padding: 0.6rem 0.85rem;
-            margin-top: 0.75rem;
-            font-size: 0.75rem;
-            color: #94A3B8;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Cart Footer Bottom Bar */
-        .rp-drawer-footer {
-            padding: 1.25rem 1.5rem;
-            background: #020617;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-
-        .rp-drawer-total-label {
-            font-size: 0.75rem;
-            color: #94A3B8;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .rp-drawer-total-price {
-            font-size: 1.35rem;
-            font-weight: 900;
-            color: #FFF;
-        }
-
-        .rp-drawer-checkout-btn {
-            background: #FFFFFF;
-            color: #0F172A;
-            font-weight: 800;
-            font-size: 0.95rem;
-            padding: 0.85rem 1.75rem;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+            gap: 4px;
             transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
         }
 
-        .rp-drawer-checkout-btn:hover {
-            background: #F1F5F9;
+        .rp-cart-toast-btn:hover {
+            background: #16A34A;
+            color: #FFFFFF;
             transform: translateY(-1px);
-        }
-
-        .rp-cart-empty-state {
-            text-align: center;
-            padding: 4rem 1rem;
-            color: #94A3B8;
         }
     </style>
 
@@ -902,10 +726,10 @@
         <div class="rp-nav-inner">
             <!-- Logo -->
             <a href="{{ route('products.index') }}" class="rp-logo">
-                <div class="rp-logo-badge">RL</div>
+                <img src="{{ asset('logo.png') }}" alt="Logo Ruang Lemari" style="height: 38px; width: auto; object-fit: contain;">
                 <div class="rp-logo-info">
                     <span class="rp-logo-name">Ruang Lemari</span>
-                    <span class="rp-logo-tagline">Marketplace Thrifting & Preloved Original</span>
+                    <span class="rp-logo-tagline">Semua Langanan dalam satu tempat</span>
                 </div>
             </a>
 
@@ -923,16 +747,16 @@
             <!-- Right Section -->
             <nav class="rp-nav-right">
                 <!-- Shopping Cart Icon Trigger -->
-                <button class="rp-nav-icon-btn" onclick="openCartDrawer()" title="Keranjang Belanja">
-                    <i class="fa-solid fa-bag-shopping"></i>
+                <a href="{{ route('cart.index') }}" class="rp-nav-icon-btn" title="Keranjang Belanja" style="text-decoration: none;">
+                    <i class="fa-solid fa-cart-shopping"></i>
                     <span id="rp-cart-badge" class="rp-cart-badge">0</span>
-                </button>
+                </a>
 
                 @auth
                     <!-- Live Chat Icon Trigger -->
                     <a href="{{ route('chat.index') }}" class="rp-nav-icon-btn" title="Pesan & Obrolan">
-                        <i class="fa-regular fa-comment-dots"></i>
-                        <span id="rp-chat-badge" class="rp-cart-badge" style="background: #22C55E; display: none;">0</span>
+                        <i class="fa-solid fa-comment-dots"></i>
+                        <span id="rp-chat-badge" class="rp-cart-badge" style="background: #EF4444; display: none;">0</span>
                     </a>
 
                     @if(auth()->user()->is_admin)
@@ -1061,8 +885,8 @@
     <footer>
         <div class="rp-footer-inner">
             <div class="rp-footer-brand">
-                <div style="width:28px;height:28px;background:#0F172A;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:0.8rem;">RL</div>
-                <span class="rp-footer-text">© 2026 <strong style="color:var(--rp-text);">Ruang Lemari</strong> — Marketplace Thrifting & Preloved Original</span>
+                <img src="{{ asset('logo.png') }}" alt="Logo Ruang Lemari" style="height: 28px; width: auto; object-fit: contain;">
+                <span class="rp-footer-text">© 2026 <strong style="color:var(--rp-text);">Ruang Lemari</strong> — Semua Langanan dalam satu tempat</span>
             </div>
             <div class="rp-footer-links">
                 <a href="{{ route('products.index') }}"><i class="fa-solid fa-shirt"></i> Katalog Produk</a>
@@ -1072,53 +896,8 @@
         </div>
     </footer>
 
-    <!-- CART SIDE DRAWER OVERLAY -->
-    <div id="rp-cart-backdrop" class="rp-cart-backdrop" onclick="closeCartDrawer()"></div>
-    <div id="rp-cart-drawer" class="rp-cart-drawer">
-        <!-- Top Header -->
-        <div class="rp-drawer-header">
-            <div class="rp-drawer-header-title">
-                <i class="fa-solid fa-bag-shopping" style="color:#22C55E;"></i>
-                <span id="rp-drawer-title-count">0 item</span>
-            </div>
-            <button class="rp-drawer-close-btn" onclick="closeCartDrawer()">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-
-        <!-- Promo Bar -->
-        <div class="rp-promo-bar">
-            <span class="rp-promo-badge">PROMO</span>
-            <span>Gunakan Kode Voucher Ruang Lemari</span>
-        </div>
-
-        <!-- Cart Body -->
-        <div class="rp-drawer-body">
-            <div class="rp-select-all-bar">
-                <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
-                    <input type="checkbox" id="rp-select-all-cb" onchange="toggleSelectAllCart(this.checked)" checked style="accent-color:#22C55E; transform:scale(1.2);">
-                    <span>Pilih Semua Barang</span>
-                </label>
-                <span id="rp-selected-count-label" style="color:#22C55E;">0 dipilih</span>
-            </div>
-
-            <!-- Items container -->
-            <div id="rp-cart-items-container">
-                <!-- Rendered by JS -->
-            </div>
-        </div>
-
-        <!-- Bottom Footer -->
-        <div class="rp-drawer-footer">
-            <div>
-                <div class="rp-drawer-total-label">Total Pembayaran</div>
-                <div id="rp-drawer-total-price" class="rp-drawer-total-price">Rp 0</div>
-            </div>
-            <button id="rp-drawer-checkout-btn" onclick="submitCartCheckout()" class="rp-drawer-checkout-btn">
-                <i class="fa-solid fa-check-circle"></i> Bayar Sekarang
-            </button>
-        </div>
-    </div>
+    <!-- CART TOAST NOTIFICATION CONTAINER -->
+    <div id="rp-toast-container" class="rp-toast-container"></div>
 
     <!-- CART JAVASCRIPT LOGIC -->
     <script>
@@ -1143,12 +922,12 @@
             renderCartUI();
         }
 
-        function addToCart(product) {
+        function addToCart(product, triggerEl) {
             let cart = getCart();
             let existing = cart.find(item => item.id === product.id);
 
             if (existing) {
-                existing.qty = (existing.qty || 1) + 1;
+                existing.qty = (existing.qty || 1) + (product.qty || 1);
             } else {
                 cart.push({
                     id: product.id,
@@ -1156,13 +935,144 @@
                     price: product.price,
                     badge: product.badge || '',
                     category: product.category || 'Thrifting',
-                    qty: 1,
+                    store_name: product.store_name || 'Ruang Lemari Store',
+                    image: product.image || '',
+                    qty: product.qty || 1,
                     selected: true
                 });
             }
 
             saveCart(cart);
-            openCartDrawer();
+
+            // Jalankan animasi visual flying item & bouncing badge
+            playAddToCartAnimation(triggerEl, product);
+
+            // Tampilkan toast notifikasi modern
+            showCartToast(product.name);
+        }
+
+        function playAddToCartAnimation(triggerEl, product) {
+            const cartTarget = document.getElementById('rp-cart-badge') || document.querySelector('.fa-cart-shopping');
+            if (!cartTarget) {
+                renderCartUI();
+                return;
+            }
+
+            // Dapatkan posisi titik awal (tombol klik atau kursor/tengah layar)
+            let startX = window.innerWidth / 2;
+            let startY = window.innerHeight - 100;
+
+            if (triggerEl && typeof triggerEl.getBoundingClientRect === 'function') {
+                const rect = triggerEl.getBoundingClientRect();
+                startX = rect.left + rect.width / 2;
+                startY = rect.top + rect.height / 2;
+            } else if (window.event && window.event.clientX) {
+                startX = window.event.clientX;
+                startY = window.event.clientY;
+            }
+
+            // Dapatkan posisi titik tujuan (ikon keranjang di navbar)
+            const targetRect = cartTarget.getBoundingClientRect();
+            const endX = targetRect.left + targetRect.width / 2;
+            const endY = targetRect.top + targetRect.height / 2;
+
+            // Buat elemen visual terbang (flying item)
+            const flyer = document.createElement('div');
+            flyer.className = 'rp-flying-item';
+
+            if (product && product.image) {
+                flyer.innerHTML = `<img src="${product.image}" alt="item" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+            } else {
+                flyer.innerHTML = `<i class="fa-solid fa-shirt" style="font-size: 1.15rem; color: #22C55E;"></i>`;
+            }
+
+            flyer.style.left = `${startX}px`;
+            flyer.style.top = `${startY}px`;
+            document.body.appendChild(flyer);
+
+            // Mulai animasi terbang melengkung ke arah keranjang
+            requestAnimationFrame(() => {
+                flyer.style.left = `${endX}px`;
+                flyer.style.top = `${endY}px`;
+                flyer.classList.add('flying');
+            });
+
+            // Efek saat mendarat di keranjang
+            setTimeout(() => {
+                if (flyer && flyer.parentNode) {
+                    flyer.parentNode.removeChild(flyer);
+                }
+
+                // Bounce animation pada badge keranjang & rotasi pulse pada icon
+                const badge = document.getElementById('rp-cart-badge');
+                const icon = document.querySelector('.fa-cart-shopping');
+
+                if (badge) {
+                    badge.classList.remove('rp-cart-bounce');
+                    void badge.offsetWidth;
+                    badge.classList.add('rp-cart-bounce');
+                }
+                if (icon) {
+                    icon.classList.remove('rp-cart-icon-pulse');
+                    void icon.offsetWidth;
+                    icon.classList.add('rp-cart-icon-pulse');
+                }
+
+                renderCartUI();
+            }, 650);
+        }
+
+        function showCartToast(productName) {
+            let container = document.getElementById('rp-toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'rp-toast-container';
+                container.className = 'rp-toast-container';
+                document.body.appendChild(container);
+            }
+
+            const toast = document.createElement('div');
+            toast.className = 'rp-cart-toast';
+            const displayName = productName ? (productName.length > 28 ? productName.substring(0, 28) + '...' : productName) : 'Barang pilihan Anda';
+
+            toast.innerHTML = `
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(34,197,94,0.15); border: 1.5px solid rgba(34,197,94,0.4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i class="fa-solid fa-check" style="color: #22C55E; font-size: 0.95rem;"></i>
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 800; font-size: 0.85rem; color: #FFFFFF;">Ditambahkan ke Keranjang!</div>
+                    <div style="font-size: 0.75rem; color: #94A3B8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;">
+                        ${displayName}
+                    </div>
+                </div>
+                <a href="{{ route('cart.index') }}" class="rp-cart-toast-btn">
+                    Lihat Keranjang <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem;"></i>
+                </a>
+            `;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast && toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 350);
+            }, 3500);
+        }
+
+        function openCartDrawer() {
+            // Pop-up keranjang di home dihilangkan; diarahkan ke halaman keranjang sendiri
+            window.location.href = "{{ route('cart.index') }}";
+        }
+
+        function closeCartDrawer() {
+            // No-op karena popup drawer sudah digantikan dengan halaman /cart
         }
 
         function removeFromCart(productId) {
@@ -1197,33 +1107,29 @@
             saveCart(cart);
         }
 
-        function openCartDrawer() {
-            document.getElementById('rp-cart-backdrop').classList.add('open');
-            document.getElementById('rp-cart-drawer').classList.add('open');
-            renderCartUI();
-        }
-
-        function closeCartDrawer() {
-            document.getElementById('rp-cart-backdrop').classList.remove('open');
-            document.getElementById('rp-cart-drawer').classList.remove('open');
-        }
-
         function formatRupiah(number) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number).replace('IDR', 'Rp');
         }
 
         function renderCartUI() {
             const cart = getCart();
-            const container = document.getElementById('rp-cart-items-container');
             const cartBadge = document.getElementById('rp-cart-badge');
+            const totalItems = cart.reduce((acc, item) => acc + item.qty, 0);
+
+            if (cartBadge) {
+                cartBadge.innerText = totalItems;
+            }
+
+            // Bila halaman memiliki cart items container tersendiri
+            const container = document.getElementById('rp-cart-items-container');
+            if (!container) return;
+
             const headerTitle = document.getElementById('rp-drawer-title-count');
             const selectedCountLabel = document.getElementById('rp-selected-count-label');
             const totalPriceEl = document.getElementById('rp-drawer-total-price');
             const selectAllCb = document.getElementById('rp-select-all-cb');
 
-            const totalItems = cart.reduce((acc, item) => acc + item.qty, 0);
-            cartBadge.innerText = totalItems;
-            headerTitle.innerText = `${totalItems} barang`;
+            if (headerTitle) headerTitle.innerText = `${totalItems} barang`;
 
             if (cart.length === 0) {
                 container.innerHTML = `
@@ -1233,8 +1139,8 @@
                         <p style="font-size:0.85rem; margin-top:0.4rem;">Silakan pilih barang thrifting favorit Anda!</p>
                     </div>
                 `;
-                totalPriceEl.innerText = 'Rp 0';
-                selectedCountLabel.innerText = '0 dipilih';
+                if (totalPriceEl) totalPriceEl.innerText = 'Rp 0';
+                if (selectedCountLabel) selectedCountLabel.innerText = '0 dipilih';
                 if (selectAllCb) selectAllCb.checked = false;
                 return;
             }
@@ -1271,18 +1177,14 @@
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
-                            <div class="rp-cart-bonus-box">
-                                <i class="fa-solid fa-shield-halved" style="color:#22C55E;"></i>
-                                <span>100% Authentic & Checked Condition</span>
-                            </div>
                         </div>
                     </div>
                 `;
             });
 
             container.innerHTML = html;
-            totalPriceEl.innerText = formatRupiah(calculatedTotal);
-            selectedCountLabel.innerText = `${selectedCount} dipilih`;
+            if (totalPriceEl) totalPriceEl.innerText = formatRupiah(calculatedTotal);
+            if (selectedCountLabel) selectedCountLabel.innerText = `${selectedCount} dipilih`;
             if (selectAllCb) selectAllCb.checked = allSelected && cart.length > 0;
         }
 

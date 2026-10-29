@@ -36,10 +36,10 @@ class OrderController extends Controller
             'order_status' => 'required|in:processing,completed,cancelled',
         ]);
 
-        $order->update([
-            'payment_status' => $request->payment_status,
-            'order_status' => $request->order_status,
-        ]);
+        $order->updateAdministrativeStatus(
+            paymentStatus: $request->payment_status,
+            orderStatus: $request->order_status
+        );
 
         return redirect()->back()->with('success', 'Status pesanan #'.$order->order_number.' berhasil diperbarui!');
     }

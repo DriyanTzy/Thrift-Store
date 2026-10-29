@@ -489,7 +489,8 @@
                     <!-- Action Buttons: + Keranjang & Lanjut Pembayaran -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <button type="button" 
-                                onclick='addCurrentItemToCart()' 
+                                id="btn-add-to-cart"
+                                onclick='addCurrentItemToCart(event)' 
                                 style="padding: 1rem; font-size: 0.95rem; font-weight: 800; color: #0F172A; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 14px; cursor: pointer; transition: all 0.2s;"
                                 onmouseover="this.style.background='#F8FAFC'; this.style.borderColor='#0F172A';"
                                 onmouseout="this.style.background='#FFFFFF'; this.style.borderColor='#CBD5E1';">
@@ -796,16 +797,19 @@
         thumbElement.style.borderColor = '#0F172A';
     }
 
-    function addCurrentItemToCart() {
+    function addCurrentItemToCart(event) {
         const size = document.getElementById('selected-size-input').value || 'All Size';
+        const triggerBtn = (event && (event.currentTarget || event.target)) || document.getElementById('btn-add-to-cart');
         addToCart({
             id: {{ $product->id }},
             name: "{{ addslashes($product->name) }} (Size: " + size + ")",
             size: size,
             price: {{ $product->price }},
             badge: "{{ $product->badge ?? '' }}",
-            category: "{{ $product->category->name }}"
-        });
+            category: "{{ $product->category->name }}",
+            store_name: "{{ addslashes($product->user->store_name ?? $product->user->name ?? 'Ruang Lemari Store') }}",
+            image: "{{ $product->image ? asset('storage/' . $product->image) : '' }}"
+        }, triggerBtn);
     }
 </script>
 @endpush
